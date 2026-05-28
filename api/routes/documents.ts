@@ -76,8 +76,6 @@ router.post('/', upload.single('file'), (req, res) => {
   const { userId, teamId } = req.body;
   const file = req.file;
 
-  console.log('文件上传请求:', { userId, teamId, originalName: file ? file.originalname : null, storedName: file ? file.filename : null });
-
   if (!userId || !teamId) {
     return res.status(400).json({ success: false, message: '用户ID和队伍ID不能为空' });
   }
@@ -87,8 +85,19 @@ router.post('/', upload.single('file'), (req, res) => {
   }
 
   try {
-    const document = documentStore.create(userId, teamId, file.originalname, file.filename);
-    uploadLogStore.create(document.id, userId, teamId, file.originalname, file.size, 'upload');
+    let originalFilename = file.originalname;
+    
+    if (originalFilename !== decodeURIComponent(originalFilename)) {
+      try {
+        originalFilename = decodeURIComponent(originalFilename);
+      } catch {
+      }
+    }
+
+    console.log('文件上传请求:', { userId, teamId, originalName: originalFilename, storedName: file.filename });
+
+    const document = documentStore.create(userId, teamId, originalFilename, file.filename);
+    uploadLogStore.create(document.id, userId, teamId, originalFilename, file.size, 'upload');
     
     console.log('文件上传成功:', document);
     res.json({ success: true, data: document });
