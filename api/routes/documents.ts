@@ -3,7 +3,6 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import iconv from 'iconv-lite';
 import { documentStore, uploadLogStore } from '../data/database';
 
 const router = express.Router();
@@ -19,18 +18,12 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    const originalName = file.originalname;
-    try {
-      const buffer = Buffer.from(originalName, 'utf-8');
-      const decodedName = iconv.decode(buffer, 'GBK');
-      if (decodedName !== originalName && !decodedName.includes('\u0000')) {
-        cb(null, decodedName);
-      } else {
-        cb(null, originalName);
-      }
-    } catch {
-      cb(null, originalName);
-    }
+    const ext = path.extname(file.originalname);
+    const basename = path.basename(file.originalname, ext);
+    const timestamp = Date.now().toString();
+    const random = Math.random().toString(36).substring(2, 8);
+    const safeFilename = `${timestamp}_${random}${ext}`;
+    cb(null, safeFilename);
   },
 });
 
@@ -67,35 +60,23 @@ router.get('/download/:id', (req, res) => {
     return res.status(404).json({ success: false, message: '文档不存在' });
   }
 
-  let filePath = path.join(uploadsDir, document.filePath);
-  
-  if (!fs.existsSync(filePath)) {
-    try {
-      const gbkPath = iconv.encode(document.filePath, 'GBK').toString('latin1');
-      filePath = path.join(uploadsDir, gbkPath);
-    } catch {
-      return res.status(404).json({ success: false, message: '文件不存在' });
-    }
-  }
-
+  const filePath = path.join(uploadsDir, document.filePath);
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ success: false, message: '文件不存在' });
   }
 
-  const encodedFileName = encodeURIComponent(document.fileName);
-  res.setHeader('Content-Disposition', `attachment; filename="${encodedFileName}"; filename*=UTF-8''${encodedFileName}`);
-  res.download(filePath, document.fileName, (err) => {
-    if (err) {
-      res.status(500).json({ success: false, message: '下载失败' });
-    }
-  });
+  res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(document.fileName)}`);
+  
+  const fileStream = fs.createReadStream(filePath);
+  fileStream.pipe(res);
 });
 
 router.post('/', upload.single('file'), (req, res) => {
   const { userId, teamId } = req.body;
   const file = req.file;
 
-  console.log('文件上传请求:', { userId, teamId, file: file ? file.originalname : null });
+  console.log('文件上传请求:', { userId, teamId, originalName: file ? file.originalname : null, storedName: file ? file.filename : null });
 
   if (!userId || !teamId) {
     return res.status(400).json({ success: false, message: '用户ID和队伍ID不能为空' });
@@ -123,16 +104,7 @@ router.delete('/:id', (req, res) => {
     return res.status(404).json({ success: false, message: '文档不存在' });
   }
 
-  let filePath = path.join(uploadsDir, document.filePath);
-  
-  if (!fs.existsSync(filePath)) {
-    try {
-      const gbkPath = iconv.encode(document.filePath, 'GBK').toString('latin1');
-      filePath = path.join(uploadsDir, gbkPath);
-    } catch {
-    }
-  }
-
+  const filePath = path.join(uploadsDir, document.filePath);
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
   }
