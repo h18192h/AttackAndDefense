@@ -56,6 +56,19 @@ router.get('/logs/:teamId', (req, res) => {
   res.json({ success: true, data: logs });
 });
 
+router.get('/template/download', (req, res) => {
+  const templatePath = path.join(uploadsDir, 'demo.docx');
+  if (!fs.existsSync(templatePath)) {
+    return res.status(404).json({ success: false, message: '模板文件不存在' });
+  }
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent('demo.docx')}`);
+  
+  const fileStream = fs.createReadStream(templatePath);
+  fileStream.pipe(res);
+});
+
 router.get('/download/:id', (req, res) => {
   const document = documentStore.getById(req.params.id);
   if (!document) {

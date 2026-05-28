@@ -258,6 +258,19 @@ export default function UserDashboard() {
           </div>
 
           <div className="space-y-6">
+            <div className="bg-gradient-to-r from-red-600 to-orange-600 rounded-2xl p-4 border-2 border-red-500/50">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="w-5 h-5 text-white" />
+                <h3 className="font-semibold text-white">防守平台信息</h3>
+              </div>
+              <div className="text-sm space-y-1 text-white/90">
+                <p>防守平台URL：<span className="font-mono">https://117.113.42.200:9443</span></p>
+                <p>用户名：<span className="font-mono">admin</span></p>
+                <p>密码：<span className="font-mono">WzScdZpG</span></p>
+                <p>运维机用户名及密码：<span className="font-mono">root/1qaz!QAZ</span></p>
+              </div>
+            </div>
+
             <div className="bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl p-6 text-white">
               <div className="flex items-center gap-2 mb-4">
                 <Award className="w-6 h-6" />
@@ -278,6 +291,25 @@ export default function UserDashboard() {
                 <Upload className="w-6 h-6 text-green-400" />
                 上传文档
               </h2>
+
+              <div className="mb-6 p-4 bg-blue-900/30 border border-blue-700/50 rounded-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-6 h-6 text-blue-400" />
+                    <div>
+                      <p className="font-medium text-white">报告模板下载</p>
+                      <p className="text-xs text-gray-400">下载并填写报告模板</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => window.open('/api/documents/template/download', '_blank')}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="text-sm">下载模板</span>
+                  </button>
+                </div>
+              </div>
 
               {message && (
                 <div className={`mb-4 p-3 rounded-lg text-sm ${
