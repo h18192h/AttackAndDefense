@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, LogOut, Upload, FileText, Trophy, RefreshCw, User, Award, Download, Trash2 } from 'lucide-react';
+import { Shield, LogOut, Upload, FileText, Trophy, RefreshCw, User, Award, Download, Trash2, Bell, AlertTriangle, Info, TrendingUp, TrendingDown } from 'lucide-react';
 import { useAuthStore, useAppStore } from '../hooks/useStore';
-import { teamApi, scoreApi, documentApi, Team, TeamScore, Document } from '../lib/api';
+import { teamApi, scoreApi, documentApi, announcementApi, Team, TeamScore, Document, Announcement } from '../lib/api';
 
 export default function UserDashboard() {
   const user = useAuthStore((state) => state.user);
@@ -19,6 +19,8 @@ export default function UserDashboard() {
   const [myTeamScore, setMyTeamScore] = useState<TeamScore | null>(null);
   const [myRank, setMyRank] = useState(0);
   const [dragOver, setDragOver] = useState(false);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const announcementIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -26,7 +28,23 @@ export default function UserDashboard() {
       return;
     }
     loadData();
+    loadAnnouncements();
+    announcementIntervalRef.current = setInterval(loadAnnouncements, 10000);
+    return () => {
+      if (announcementIntervalRef.current) clearInterval(announcementIntervalRef.current);
+    };
   }, [user, navigate, refreshTrigger]);
+
+  const loadAnnouncements = async () => {
+    try {
+      const result = await announcementApi.getRecent(10);
+      if (result.success) {
+        setAnnouncements(result.data);
+      }
+    } catch (err) {
+      console.error('Failed to load announcements:', err);
+    }
+  };
 
   const loadData = async () => {
     const [teamsRes, rankingsRes, docsRes] = await Promise.all([
@@ -161,6 +179,62 @@ export default function UserDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
+            <div className="bg-gradient-to-r from-blue-600/20 to-cyan-600/20 backdrop-blur-sm rounded-2xl p-6 border border-blue-500/30">
+              <div className="flex items-center gap-2 mb-4">
+                <Bell className="w-5 h-5 text-blue-400" />
+                <h2 className="text-lg font-bold text-white">实时动态公告</h2>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {announcements.map((announcement) => {
+                  const getTypeStyle = () => {
+                    switch (announcement.type) {
+                      case 'score':
+                        return {
+                          bg: announcement.points && announcement.points >= 0 ? 'bg-green-500/10' : 'bg-red-500/10',
+                          icon: announcement.points && announcement.points >= 0 ? <TrendingUp className="w-4 h-4 text-green-400" /> : <TrendingDown className="w-4 h-4 text-red-400" />,
+                          title: announcement.points && announcement.points >= 0 ? 'text-green-400' : 'text-red-400',
+                        };
+                      case 'warning':
+                        return {
+                          bg: 'bg-yellow-500/10',
+                          icon: <AlertTriangle className="w-4 h-4 text-yellow-400" />,
+                          title: 'text-yellow-400',
+                        };
+                      default:
+                        return {
+                          bg: 'bg-blue-500/10',
+                          icon: <Info className="w-4 h-4 text-blue-400" />,
+                          title: 'text-blue-400',
+                        };
+                    }
+                  };
+                  
+                  const style = getTypeStyle();
+                  const timestamp = new Date(announcement.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                  
+                  return (
+                    <div key={announcement.id} className={`flex items-start gap-3 p-3 rounded-lg ${style.bg}`}>
+                      <div className="mt-0.5">
+                        {style.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-semibold ${style.title}`}>{announcement.title}</span>
+                          <span className="text-xs text-gray-500">{timestamp}</span>
+                        </div>
+                        <p className="text-sm text-gray-300 mt-1">{announcement.content}</p>
+                      </div>
+                      {announcement.points !== undefined && (
+                        <span className={`text-lg font-bold ${announcement.points >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {announcement.points >= 0 ? '+' : ''}{announcement.points}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, LogOut, Users, Trophy, Plus, Edit2, Trash2, User, Star, AlertCircle, X, Check, FileText, Download, Key } from 'lucide-react';
+import { Shield, LogOut, Users, Trophy, Plus, Edit2, Trash2, User, Star, AlertCircle, X, Check, FileText, Download, Key, Bell, AlertTriangle, Info, TrendingUp, TrendingDown } from 'lucide-react';
 import { useAuthStore, useAppStore } from '../hooks/useStore';
-import { teamApi, userApi, scoreApi, documentApi, Team, User as UserType, Score, TeamScore, Document } from '../lib/api';
+import { teamApi, userApi, scoreApi, documentApi, announcementApi, Team, User as UserType, Score, TeamScore, Document, Announcement } from '../lib/api';
 
-type TabType = 'teams' | 'users' | 'scores' | 'documents';
+type TabType = 'teams' | 'users' | 'scores' | 'documents' | 'announcements';
 
 interface ModalState {
-  type: 'createTeam' | 'editTeam' | 'createUser' | 'editUser' | 'addScore' | 'changePassword' | null;
+  type: 'createTeam' | 'editTeam' | 'createUser' | 'editUser' | 'addScore' | 'changePassword' | 'createAnnouncement' | null;
   data: any;
 }
 
@@ -23,6 +23,7 @@ export default function AdminDashboard() {
   const [scores, setScores] = useState<Score[]>([]);
   const [rankings, setRankings] = useState<TeamScore[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [modal, setModal] = useState<ModalState>({ type: null, data: null });
   const [formData, setFormData] = useState({
     name: '',
@@ -33,6 +34,9 @@ export default function AdminDashboard() {
     teamId: '',
     points: 0,
     description: '',
+    title: '',
+    content: '',
+    announcementType: 'system' as 'system' | 'score' | 'warning',
   });
   const [message, setMessage] = useState('');
 
@@ -45,18 +49,20 @@ export default function AdminDashboard() {
   }, [user, navigate]);
 
   const loadData = async () => {
-    const [teamsRes, usersRes, scoresRes, rankingsRes, docsRes] = await Promise.all([
+    const [teamsRes, usersRes, scoresRes, rankingsRes, docsRes, announcementsRes] = await Promise.all([
       teamApi.getAll(),
       userApi.getAll(),
       scoreApi.getAll(),
       scoreApi.getRanking(),
       documentApi.getAll(),
+      announcementApi.getAll(),
     ]);
     if (teamsRes.success) setTeams(teamsRes.data);
     if (usersRes.success) setUsers(usersRes.data);
     if (scoresRes.success) setScores(scoresRes.data);
     if (rankingsRes.success) setRankings(rankingsRes.data);
     if (docsRes.success) setDocuments(docsRes.data);
+    if (announcementsRes.success) setAnnouncements(announcementsRes.data);
   };
 
   const handleLogout = () => {
@@ -75,6 +81,9 @@ export default function AdminDashboard() {
       teamId: data?.teamId || '',
       points: 0,
       description: '',
+      title: '',
+      content: '',
+      announcementType: 'system',
     });
     setMessage('');
   };
@@ -90,6 +99,9 @@ export default function AdminDashboard() {
       teamId: '',
       points: 0,
       description: '',
+      title: '',
+      content: '',
+      announcementType: 'system',
     });
     setMessage('');
   };
@@ -158,9 +170,25 @@ export default function AdminDashboard() {
             setMessage(result.message || '修改失败');
           }
           break;
+        case 'createAnnouncement':
+          result = await announcementApi.create(formData.title, formData.content, formData.announcementType, formData.teamId || undefined);
+          if (result.success) {
+            setMessage('公告发布成功');
+            loadData();
+          } else {
+            setMessage(result.message || '发布失败');
+          }
+          break;
       }
     } catch (err) {
       setMessage('操作失败');
+    }
+  };
+
+  const handleDeleteAnnouncement = async (id: string) => {
+    const result = await announcementApi.delete(id);
+    if (result.success) {
+      loadData();
     }
   };
 
@@ -323,6 +351,14 @@ export default function AdminDashboard() {
               }`}
             >
               文档管理
+            </button>
+            <button
+              onClick={() => setActiveTab('announcements')}
+              className={`flex-1 py-4 px-6 font-medium transition-colors ${
+                activeTab === 'announcements' ? 'text-purple-400 border-b-2 border-purple-500 bg-purple-500/10' : 'text-gray-400 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              公告管理
             </button>
           </div>
 
@@ -512,6 +548,86 @@ export default function AdminDashboard() {
                 )}
               </div>
             )}
+
+            {activeTab === 'announcements' && (
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-lg font-semibold text-white">公告管理</h2>
+                  <button
+                    onClick={() => openModal('createAnnouncement')}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    发布公告
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {announcements.map(announcement => {
+                    const getTypeStyle = () => {
+                      switch (announcement.type) {
+                        case 'score':
+                          return {
+                            bg: announcement.points && announcement.points >= 0 ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30',
+                            icon: announcement.points && announcement.points >= 0 ? <TrendingUp className="w-4 h-4 text-green-400" /> : <TrendingDown className="w-4 h-4 text-red-400" />,
+                            title: announcement.points && announcement.points >= 0 ? 'text-green-400' : 'text-red-400',
+                          };
+                        case 'warning':
+                          return {
+                            bg: 'bg-yellow-500/10 border-yellow-500/30',
+                            icon: <AlertTriangle className="w-4 h-4 text-yellow-400" />,
+                            title: 'text-yellow-400',
+                          };
+                        default:
+                          return {
+                            bg: 'bg-blue-500/10 border-blue-500/30',
+                            icon: <Info className="w-4 h-4 text-blue-400" />,
+                            title: 'text-blue-400',
+                          };
+                      }
+                    };
+                    
+                    const style = getTypeStyle();
+                    return (
+                      <div key={announcement.id} className={`flex items-start justify-between p-4 rounded-xl border ${style.bg}`}>
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5">
+                            {style.icon}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className={`font-semibold ${style.title}`}>{announcement.title}</span>
+                              {announcement.teamName && (
+                                <span className="text-xs px-2 py-0.5 bg-slate-700 rounded-full text-gray-300">
+                                  {announcement.teamName}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-300 mt-1">{announcement.content}</p>
+                            <p className="text-xs text-gray-500 mt-2">
+                              {new Date(announcement.timestamp).toLocaleString('zh-CN')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {announcement.points !== undefined && (
+                            <span className={`text-xl font-bold ${announcement.points >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {announcement.points >= 0 ? '+' : ''}{announcement.points}
+                            </span>
+                          )}
+                          <button
+                            onClick={() => handleDeleteAnnouncement(announcement.id)}
+                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
+                            title="删除"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -527,6 +643,7 @@ export default function AdminDashboard() {
                 {modal.type === 'editUser' && '编辑用户'}
                 {modal.type === 'addScore' && '添加分数'}
                 {modal.type === 'changePassword' && '修改密码'}
+                {modal.type === 'createAnnouncement' && '发布公告'}
               </h3>
               <button onClick={closeModal} className="text-gray-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -694,6 +811,56 @@ export default function AdminDashboard() {
                   />
                   <p className="text-xs text-gray-500 mt-2">修改用户: {modal.data?.username}</p>
                 </div>
+              )}
+
+              {modal.type === 'createAnnouncement' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">公告标题</label>
+                    <input
+                      type="text"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="请输入公告标题"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">公告类型</label>
+                    <select
+                      value={formData.announcementType}
+                      onChange={(e) => setFormData({ ...formData, announcementType: e.target.value as 'system' | 'score' | 'warning' })}
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="system">系统公告</option>
+                      <option value="score">分数变动</option>
+                      <option value="warning">警告通知</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">关联队伍（可选）</label>
+                    <select
+                      value={formData.teamId}
+                      onChange={(e) => setFormData({ ...formData, teamId: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">不关联队伍</option>
+                      {teams.map(team => (
+                        <option key={team.id} value={team.id}>{team.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">公告内容</label>
+                    <textarea
+                      value={formData.content}
+                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      rows={4}
+                      placeholder="请输入公告内容，例如：各队伍请注意，攻防演练即将开始，请做好准备。"
+                    />
+                  </div>
+                </>
               )}
             </div>
 

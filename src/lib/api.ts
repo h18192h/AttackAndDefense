@@ -37,6 +37,17 @@ export interface Document {
   uploadedAt: string;
 }
 
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  type: 'system' | 'score' | 'warning';
+  teamId?: string;
+  teamName?: string;
+  points?: number;
+  timestamp: string;
+}
+
 export const authApi = {
   login: async (username: string, password: string): Promise<{ success: boolean; message: string; user?: User }> => {
     const response = await fetch(`${BASE_URL}/auth/login`, {
@@ -192,6 +203,29 @@ export const documentApi = {
   },
   delete: async (id: string): Promise<{ success: boolean; message: string }> => {
     const response = await fetch(`${BASE_URL}/documents/${id}`, { method: 'DELETE' });
+    return response.json();
+  },
+};
+
+export const announcementApi = {
+  getAll: async (): Promise<{ success: boolean; data: Announcement[] }> => {
+    const response = await fetch(`${BASE_URL}/announcements/all`);
+    return response.json();
+  },
+  getRecent: async (limit: number = 10): Promise<{ success: boolean; data: Announcement[] }> => {
+    const response = await fetch(`${BASE_URL}/announcements?limit=${limit}`);
+    return response.json();
+  },
+  create: async (title: string, content: string, type: 'system' | 'score' | 'warning', teamId?: string): Promise<{ success: boolean; data: Announcement }> => {
+    const response = await fetch(`${BASE_URL}/announcements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, content, type, teamId }),
+    });
+    return response.json();
+  },
+  delete: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${BASE_URL}/announcements/${id}`, { method: 'DELETE' });
     return response.json();
   },
 };

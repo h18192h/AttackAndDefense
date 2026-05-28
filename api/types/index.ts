@@ -70,3 +70,14 @@ export interface Document {
   filePath: string;
   uploadedAt: Date;
 }
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  type: 'system' | 'score' | 'warning';
+  teamId?: string;
+  teamName?: string;
+  points?: number;
+  timestamp: Date;
+}

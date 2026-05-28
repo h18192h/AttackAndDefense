@@ -1,4 +1,4 @@
-import { Team, User, Score, Document } from '../types';
+import { Team, User, Score, Document, Announcement } from '../types';
 
 let teams: Team[] = [
   { id: '1', name: '红队', createdAt: new Date('2024-01-01') },
@@ -131,6 +131,42 @@ export const documentStore = {
     const initialLength = documents.length;
     documents = documents.filter(d => d.id !== id);
     return documents.length !== initialLength;
+  },
+};
+
+let announcements: Announcement[] = [
+  { id: '1', title: '系统公告', content: '攻防演练正式开始，请各队伍做好准备！', type: 'system', timestamp: new Date('2024-01-15T08:00:00') },
+  { id: '2', title: '防守成功', content: '蓝队成功防御红队攻击，获得80分', type: 'score', teamId: '2', teamName: '蓝队', points: 80, timestamp: new Date('2024-01-15T09:15:00') },
+  { id: '3', title: '攻击成功', content: '红队成功攻破目标系统，获得100分', type: 'score', teamId: '1', teamName: '红队', points: 100, timestamp: new Date('2024-01-15T10:30:00') },
+];
+
+export const announcementStore = {
+  getAll: (): Announcement[] => {
+    return [...announcements].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  },
+  getRecent: (limit: number = 10): Announcement[] => {
+    return [...announcements]
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, limit);
+  },
+  create: (title: string, content: string, type: 'system' | 'score' | 'warning', teamId?: string, teamName?: string, points?: number): Announcement => {
+    const announcement: Announcement = {
+      id: Date.now().toString(),
+      title,
+      content,
+      type,
+      teamId,
+      teamName,
+      points,
+      timestamp: new Date(),
+    };
+    announcements.push(announcement);
+    return announcement;
+  },
+  delete: (id: string): boolean => {
+    const initialLength = announcements.length;
+    announcements = announcements.filter(a => a.id !== id);
+    return announcements.length !== initialLength;
   },
 };
 

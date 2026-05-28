@@ -12,6 +12,7 @@ import teamRoutes from './routes/teams.js'
 import userRoutes from './routes/users.js'
 import scoreRoutes from './routes/scores.js'
 import documentRoutes from './routes/documents.js'
+import announcementRoutes from './routes/announcements.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -29,6 +30,7 @@ app.use('/api/teams', teamRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/scores', scoreRoutes)
 app.use('/api/documents', documentRoutes)
+app.use('/api/announcements', announcementRoutes)
 
 app.use(
   '/api/health',

@@ -59,6 +59,18 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (team_id) REFERENCES teams(id)
   );
+
+  CREATE TABLE IF NOT EXISTS announcements (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    type TEXT NOT NULL,
+    team_id TEXT,
+    team_name TEXT,
+    points INTEGER,
+    timestamp TEXT NOT NULL,
+    FOREIGN KEY (team_id) REFERENCES teams(id)
+  );
 `);
 
 const existingTeams = db.prepare('SELECT COUNT(*) as count FROM teams').get() as { count: number };
@@ -204,5 +216,24 @@ export const uploadLogStore = {
     const timestamp = new Date().toISOString();
     db.prepare('INSERT INTO upload_logs (id, document_id, user_id, team_id, file_name, file_size, action, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(id, documentId, userId, teamId, fileName, fileSize, action, timestamp);
     return { id, documentId, userId, teamId, fileName, fileSize, action, timestamp };
+  },
+};
+
+export const announcementStore = {
+  getAll: () => {
+    return db.prepare('SELECT id, title, content, type, team_id as teamId, team_name as teamName, points, timestamp FROM announcements ORDER BY timestamp DESC').all();
+  },
+  getRecent: (limit: number = 10) => {
+    return db.prepare('SELECT id, title, content, type, team_id as teamId, team_name as teamName, points, timestamp FROM announcements ORDER BY timestamp DESC LIMIT ?').all(limit);
+  },
+  create: (title: string, content: string, type: string, teamId?: string, teamName?: string, points?: number) => {
+    const id = Date.now().toString();
+    const timestamp = new Date().toISOString();
+    db.prepare('INSERT INTO announcements (id, title, content, type, team_id, team_name, points, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(id, title, content, type, teamId || null, teamName || null, points || null, timestamp);
+    return { id, title, content, type, teamId, teamName, points, timestamp };
+  },
+  delete: (id: string) => {
+    const result = db.prepare('DELETE FROM announcements WHERE id = ?').run(id);
+    return result.changes > 0;
   },
 };

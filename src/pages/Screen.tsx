@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Trophy, Medal, Award, RefreshCw, Clock, Zap, Shield, Activity, Wifi } from 'lucide-react';
-import { scoreApi, TeamScore } from '../lib/api';
+import { Trophy, Medal, Award, RefreshCw, Clock, Zap, Shield, Activity, Wifi, Bell, AlertTriangle, Info, TrendingUp, TrendingDown } from 'lucide-react';
+import { scoreApi, announcementApi, TeamScore, Announcement } from '../lib/api';
 
 interface AnimatedNumber {
   value: number;
@@ -15,8 +15,10 @@ export default function Screen() {
   const [attackMode, setAttackMode] = useState(true);
   const [flickerEffect, setFlickerEffect] = useState(false);
   const [networkStatus, setNetworkStatus] = useState('online');
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const announcementIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadData = async () => {
     setIsRefreshing(true);
@@ -61,12 +63,26 @@ export default function Screen() {
     }
   };
 
+  const loadAnnouncements = async () => {
+    try {
+      const result = await announcementApi.getRecent(15);
+      if (result.success) {
+        setAnnouncements(result.data);
+      }
+    } catch (err) {
+      console.error('Failed to load announcements:', err);
+    }
+  };
+
   useEffect(() => {
     loadData();
+    loadAnnouncements();
     intervalRef.current = setInterval(loadData, 8000);
+    announcementIntervalRef.current = setInterval(loadAnnouncements, 5000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (announcementIntervalRef.current) clearInterval(announcementIntervalRef.current);
     };
   }, []);
 
@@ -335,6 +351,76 @@ export default function Screen() {
                       <div className="text-right flex-shrink-0">
                         <p className="text-cyan-400 font-mono text-base font-bold">{Math.round(displayScore).toLocaleString()}</p>
                       </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 bg-gradient-to-r from-slate-900/60 to-slate-800/60 rounded-xl p-4 border border-cyan-500/20">
+            <div className="flex items-center gap-2 mb-3">
+              <Bell className="w-5 h-5 text-cyan-400 animate-pulse" />
+              <h3 className="text-lg font-bold text-white">实时动态</h3>
+              <div className="ml-auto flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span className="text-xs text-green-400">直播中</span>
+              </div>
+            </div>
+            
+            <div className="relative overflow-hidden h-48">
+              <div className="space-y-2">
+                {announcements.map((announcement, index) => {
+                  const getTypeStyle = () => {
+                    switch (announcement.type) {
+                      case 'score':
+                        return {
+                          bg: announcement.points && announcement.points >= 0 ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30',
+                          icon: announcement.points && announcement.points >= 0 ? <TrendingUp className="w-4 h-4 text-green-400" /> : <TrendingDown className="w-4 h-4 text-red-400" />,
+                          title: announcement.points && announcement.points >= 0 ? 'text-green-400' : 'text-red-400',
+                        };
+                      case 'warning':
+                        return {
+                          bg: 'bg-yellow-500/10 border-yellow-500/30',
+                          icon: <AlertTriangle className="w-4 h-4 text-yellow-400" />,
+                          title: 'text-yellow-400',
+                        };
+                      default:
+                        return {
+                          bg: 'bg-blue-500/10 border-blue-500/30',
+                          icon: <Info className="w-4 h-4 text-blue-400" />,
+                          title: 'text-blue-400',
+                        };
+                    }
+                  };
+                  
+                  const style = getTypeStyle();
+                  const timestamp = new Date(announcement.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                  
+                  return (
+                    <div
+                      key={announcement.id}
+                      className={`flex items-start gap-3 p-3 rounded-lg border ${style.bg} transition-all duration-300 hover:scale-[1.02]`}
+                      style={{
+                        animation: `slideIn 0.5s ease-out forwards`,
+                        animationDelay: `${index * 50}ms`,
+                      }}
+                    >
+                      <div className="mt-0.5">
+                        {style.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-semibold ${style.title}`}>{announcement.title}</span>
+                          <span className="text-xs text-gray-500">{timestamp}</span>
+                        </div>
+                        <p className="text-sm text-gray-300 truncate mt-1">{announcement.content}</p>
+                      </div>
+                      {announcement.points !== undefined && (
+                        <span className={`text-lg font-bold ${announcement.points >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {announcement.points >= 0 ? '+' : ''}{announcement.points}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
