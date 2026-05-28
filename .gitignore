@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .vite
+
+# Database files
+*.db
+*.db-shm
+*.db-wal

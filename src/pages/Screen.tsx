@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Trophy, Medal, Award, RefreshCw, Clock, Zap, Shield, Target, Activity, AlertTriangle, Wifi } from 'lucide-react';
+import { Trophy, Medal, Award, RefreshCw, Clock, Zap, Shield, Activity, Wifi } from 'lucide-react';
 import { scoreApi, TeamScore } from '../lib/api';
 
 interface AnimatedNumber {
@@ -152,6 +152,9 @@ export default function Screen() {
       'from-green-600 via-emerald-500 to-green-600',
       'from-purple-600 via-pink-500 to-purple-600',
       'from-indigo-600 via-violet-500 to-indigo-600',
+      'from-teal-600 via-cyan-500 to-teal-600',
+      'from-pink-600 via-rose-500 to-pink-600',
+      'from-orange-600 via-amber-500 to-orange-600',
     ];
     return gradients[index % gradients.length];
   };
@@ -175,49 +178,34 @@ export default function Screen() {
         <div className="absolute inset-0 opacity-[0.03]">
           <div className="scanline"></div>
         </div>
-
-        <div className="absolute inset-0">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-px bg-gradient-to-b from-transparent via-cyan-500/30 to-transparent"
-              style={{
-                left: `${Math.random() * 100}%`,
-                height: `${Math.random() * 300 + 100}px`,
-                animationDelay: `${Math.random() * 5}s`,
-                animation: `fall ${Math.random() * 3 + 3}s linear infinite`,
-              }}
-            ></div>
-          ))}
-        </div>
       </div>
 
-      <div className="relative z-10 min-h-screen p-4 md:p-8 lg:p-12">
-        <div className="max-w-7xl mx-auto">
-          <header className="text-center mb-6 md:mb-10">
-            <div className="flex items-center justify-center gap-3 md:gap-6 mb-3 md:mb-6">
+      <div className="relative z-10 min-h-screen p-4 md:p-6 lg:p-8">
+        <div className="max-w-[1920px] mx-auto">
+          <header className="text-center mb-6">
+            <div className="flex items-center justify-center gap-3 md:gap-4 mb-3">
               <div className="relative">
-                <div className="w-14 md:w-20 lg:w-24 h-14 md:h-20 lg:h-24 rounded-full bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 flex items-center justify-center shadow-lg shadow-purple-500/40 animate-spin-slow">
-                  <Trophy className="w-7 md:w-10 lg:w-12 h-7 md:h-10 lg:h-12 text-white" />
+                <div className="w-12 md:w-16 lg:w-20 h-12 md:h-16 lg:h-20 rounded-full bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 flex items-center justify-center shadow-lg shadow-purple-500/40 animate-spin-slow">
+                  <Trophy className="w-6 md:w-8 lg:w-10 h-6 md:h-8 lg:h-10 text-white" />
                 </div>
                 <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600 to-cyan-600 opacity-40 blur-xl animate-pulse"></div>
               </div>
             </div>
             
             <div className="relative">
-              <h1 className="text-3xl md:text-5xl lg:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 mb-2 md:mb-4 tracking-wider">
+              <h1 className="text-2xl md:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 mb-2 tracking-wider">
                 攻防演练
               </h1>
-              <h2 className="text-xl md:text-3xl lg:text-4xl font-bold">
+              <h2 className="text-lg md:text-2xl lg:text-3xl font-bold">
                 <span className="text-gradient-cyan">实时</span>
                 <span className="text-gray-500 mx-2 md:mx-4">|</span>
                 <span className="text-gradient-red">排行榜</span>
               </h2>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-3 md:gap-6 mt-4 md:mt-6 text-sm md:text-base">
+            <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 mt-4 text-sm">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 md:w-5 h-4 md:h-5 text-cyan-400" />
+                <Clock className="w-4 h-4 text-cyan-400" />
                 <span className="font-mono text-cyan-300">{formatTime(lastUpdate)}</span>
               </div>
               
@@ -236,178 +224,117 @@ export default function Screen() {
               <button
                 onClick={loadData}
                 disabled={isRefreshing}
-                className="flex items-center gap-2 px-3 md:px-5 py-1.5 md:py-2.5 bg-slate-800/70 hover:bg-slate-700/70 backdrop-blur-sm rounded-lg text-gray-300 hover:text-white transition-all border border-slate-600/50 hover:border-cyan-500/50"
+                className="flex items-center gap-2 px-3 md:px-4 py-1.5 bg-slate-800/70 hover:bg-slate-700/70 backdrop-blur-sm rounded-lg text-gray-300 hover:text-white transition-all border border-slate-600/50 hover:border-cyan-500/50"
               >
                 <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                 <span>刷新</span>
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-3 md:gap-6 mt-4">
-              <div className={`flex items-center gap-2 px-3 md:px-5 py-1.5 md:py-2 rounded-lg ${attackMode ? 'bg-red-900/40 border border-red-500/40' : 'bg-slate-800/50 border border-slate-600/50'}`}>
+            <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 mt-3">
+              <div className={`flex items-center gap-2 px-3 md:px-4 py-1.5 rounded-lg ${attackMode ? 'bg-red-900/40 border border-red-500/40' : 'bg-slate-800/50 border border-slate-600/50'}`}>
                 <Zap className={`w-4 h-4 ${attackMode ? 'text-red-400' : 'text-gray-400'}`} />
                 <span className={`text-sm ${attackMode ? 'text-red-400' : 'text-gray-400'}`}>攻击模式: {attackMode ? 'ON' : 'OFF'}</span>
               </div>
-              <div className="flex items-center gap-2 px-3 md:px-5 py-1.5 md:py-2 bg-green-900/30 border border-green-500/30 rounded-lg">
+              <div className="flex items-center gap-2 px-3 md:px-4 py-1.5 bg-green-900/30 border border-green-500/30 rounded-lg">
                 <Shield className="w-4 h-4 text-green-400" />
                 <span className="text-sm text-green-400">防御状态: ACTIVE</span>
               </div>
             </div>
           </header>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-6 mb-6 md:mb-10">
-            {rankings.map((team, index) => {
-              const rank = index + 1;
-              const style = getRankStyle(rank);
-              const isTopThree = rank <= 3;
-              const displayScore = animatedScores.get(team.teamId)?.displayValue || team.totalPoints;
-              const teamGradient = getTeamGradient(index);
-              const scorePercentage = (team.totalPoints / maxScore) * 100;
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="grid grid-cols-3 gap-4 md:gap-6">
+                {rankings.map((team, index) => {
+                  const rank = index + 1;
+                  const style = getRankStyle(rank);
+                  const isTopThree = rank <= 3;
+                  const displayScore = animatedScores.get(team.teamId)?.displayValue || team.totalPoints;
+                  const teamGradient = getTeamGradient(index);
+                  const scorePercentage = (team.totalPoints / maxScore) * 100;
 
-              return (
-                <div
-                  key={team.teamId}
-                  className={`relative rounded-xl md:rounded-2xl p-3 md:p-4 lg:p-6 ${style.bg} ${style.border} border ${style.glow} transform transition-all duration-700 hover:scale-105`}
-                  style={{
-                    animation: `slideIn 0.7s ease-out forwards`,
-                    animationDelay: `${index * 120}ms`,
-                    opacity: 0,
-                  }}
-                >
-                  {isTopThree && (
-                    <div className="absolute -top-4 md:-top-6 lg:-top-8 left-1/2 -translate-x-1/2">
-                      <div className={`w-10 md:w-12 lg:w-14 h-10 md:h-12 lg:h-14 rounded-full ${style.bg} flex items-center justify-center border-3 ${style.border} shadow-lg animate-bounce-slow`}>
-                        {rank === 1 && <Trophy className="w-5 md:w-6 lg:w-7 h-5 md:h-6 lg:h-7" />}
-                        {rank === 2 && <Medal className="w-5 md:w-6 lg:w-7 h-5 md:h-6 lg:h-7" />}
-                        {rank === 3 && <Award className="w-5 md:w-6 lg:w-7 h-5 md:h-6 lg:h-7" />}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className={`text-center ${isTopThree ? 'pt-4 md:pt-6 lg:pt-8' : ''}`}>
-                    {!isTopThree && (
-                      <div className={`inline-block w-8 md:w-10 h-8 md:h-10 rounded-full bg-gradient-to-br ${teamGradient} flex items-center justify-center ${style.textColor} mb-2 md:mb-3`}>
-                        <span className="text-lg md:text-xl font-bold">{rank}</span>
-                      </div>
-                    )}
-
-                    <h3 className={`text-lg md:text-xl lg:text-2xl font-bold ${style.textColor} mb-1 md:mb-2 tracking-wider`}>
-                      {team.teamName}
-                    </h3>
-
-                    <div className="relative">
-                      <div className={`text-2xl md:text-3xl lg:text-4xl font-black ${style.textColor} font-mono`}>
-                        {Math.round(displayScore).toLocaleString()}
-                      </div>
-                      <div className={`text-xs md:text-sm ${style.textColor} opacity-70`}>积分</div>
-                    </div>
-
-                    <div className={`mt-2 md:mt-3 h-1 md:h-1.5 lg:h-2 rounded-full overflow-hidden bg-black/30`}>
-                      <div 
-                        className={`h-full bg-gradient-to-r ${teamGradient} transition-all duration-1000`}
-                        style={{ width: `${Math.min(100, scorePercentage)}%` }}
-                      ></div>
-                    </div>
-
-                    {rank === 1 && (
-                      <div className="absolute -top-2 -right-2 md:-top-3 md:-right-3">
-                        <div className="w-6 md:w-8 h-6 md:h-8 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce shadow-lg">
-                          <span className="text-sm md:text-lg">🏆</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-10">
-            <div className="bg-gradient-to-br from-red-900/40 to-red-800/20 rounded-xl p-4 md:p-6 border border-red-500/20">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 md:w-12 h-10 md:h-12 rounded-lg bg-red-600/30 flex items-center justify-center">
-                    <Target className="w-5 md:w-6 h-5 md:h-6 text-red-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs md:text-sm text-red-300">攻击次数</p>
-                    <p className="text-2xl md:text-4xl font-bold text-red-400 font-mono">
-                      {Math.floor(Math.random() * 500 + 800)}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs text-red-400">+12.5%</span>
-                </div>
-              </div>
-              <div className="h-1.5 rounded-full bg-red-900/50 overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-red-600 to-orange-500 w-3/4 animate-pulse"></div>
-              </div>
-            </div>
-            
-            <div className="bg-gradient-to-br from-green-900/40 to-green-800/20 rounded-xl p-4 md:p-6 border border-green-500/20">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 md:w-12 h-10 md:h-12 rounded-lg bg-green-600/30 flex items-center justify-center">
-                    <Shield className="w-5 md:w-6 h-5 md:h-6 text-green-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs md:text-sm text-green-300">成功防御</p>
-                    <p className="text-2xl md:text-4xl font-bold text-green-400 font-mono">
-                      {Math.floor(Math.random() * 400 + 600)}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs text-green-400">+8.3%</span>
-                </div>
-              </div>
-              <div className="h-1.5 rounded-full bg-green-900/50 overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-green-600 to-emerald-500 w-4/5 animate-pulse"></div>
-              </div>
-            </div>
-            
-            <div className="bg-gradient-to-br from-yellow-900/40 to-yellow-800/20 rounded-xl p-4 md:p-6 border border-yellow-500/20">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 md:w-12 h-10 md:h-12 rounded-lg bg-yellow-600/30 flex items-center justify-center">
-                    <AlertTriangle className="w-5 md:w-6 h-5 md:h-6 text-yellow-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs md:text-sm text-yellow-300">漏洞发现</p>
-                    <p className="text-2xl md:text-4xl font-bold text-yellow-400 font-mono">
-                      {Math.floor(Math.random() * 30 + 15)}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs text-yellow-400">+5.2%</span>
-                </div>
-              </div>
-              <div className="h-1.5 rounded-full bg-yellow-900/50 overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-yellow-600 to-orange-500 w-1/2 animate-pulse"></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-cyan-900/30 to-blue-900/30 rounded-xl p-4 md:p-6 border border-cyan-500/20 mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Activity className="w-5 h-5 text-cyan-400" />
-              <h3 className="text-lg md:text-xl font-bold text-white">实时数据流</h3>
-            </div>
-            
-            <div className="overflow-hidden rounded-lg bg-black/30">
-              <div className="marquee">
-                {[...rankings, ...rankings].map((team, index) => {
-                  const teamGradient = getTeamGradient(index % rankings.length);
                   return (
-                    <div key={`${team.teamId}-${index}`} className="flex items-center gap-4 md:gap-6 px-4 md:px-8 whitespace-nowrap">
-                      <div className={`w-6 md:w-8 h-6 md:h-8 rounded-full bg-gradient-to-br ${teamGradient} flex items-center justify-center text-white font-bold text-sm`}>
-                        {((index % rankings.length) + 1)}
+                    <div
+                      key={team.teamId}
+                      className={`relative rounded-xl p-4 md:p-6 ${style.bg} ${style.border} border ${style.glow} transform transition-all duration-500 hover:scale-105`}
+                      style={{
+                        animation: `slideIn 0.7s ease-out forwards`,
+                        animationDelay: `${index * 80}ms`,
+                        opacity: 0,
+                      }}
+                    >
+                      {isTopThree && (
+                        <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+                          <div className={`w-12 h-12 rounded-full ${style.bg} flex items-center justify-center border-2 ${style.border} shadow-lg animate-bounce-slow`}>
+                            {rank === 1 && <Trophy className="w-6 h-6" />}
+                            {rank === 2 && <Medal className="w-6 h-6" />}
+                            {rank === 3 && <Award className="w-6 h-6" />}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className={`text-center ${isTopThree ? 'pt-4' : ''}`}>
+                        {!isTopThree && (
+                          <div className={`inline-block w-8 h-8 rounded-full bg-gradient-to-br ${teamGradient} flex items-center justify-center ${style.textColor} mb-2`}>
+                            <span className="text-lg font-bold">{rank}</span>
+                          </div>
+                        )}
+
+                        <h3 className={`text-lg font-bold ${style.textColor} mb-2`}>
+                          {team.teamName}
+                        </h3>
+
+                        <div className="relative">
+                          <div className={`text-2xl font-black ${style.textColor} font-mono`}>
+                            {Math.round(displayScore).toLocaleString()}
+                          </div>
+                          <div className={`text-sm ${style.textColor} opacity-70`}>积分</div>
+                        </div>
+
+                        <div className={`mt-3 h-1.5 rounded-full overflow-hidden bg-black/30`}>
+                          <div 
+                            className={`h-full bg-gradient-to-r ${teamGradient} transition-all duration-1000`}
+                            style={{ width: `${Math.min(100, scorePercentage)}%` }}
+                          ></div>
+                        </div>
+
+                        {rank === 1 && (
+                          <div className="absolute -top-1 -right-1">
+                            <div className="w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce shadow-lg">
+                              <span className="text-xs">🏆</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <span className="text-white font-semibold text-sm md:text-base">{team.teamName}</span>
-                      <span className="text-cyan-400 font-mono text-sm md:text-base">{team.totalPoints.toLocaleString()} 积分</span>
-                      <span className="text-gray-600">|</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="w-1/4 bg-gradient-to-br from-cyan-900/30 to-blue-900/30 rounded-xl p-4 border border-cyan-500/20 overflow-hidden flex flex-col">
+              <div className="flex items-center gap-2 mb-4">
+                <Activity className="w-5 h-5 text-cyan-400" />
+                <h3 className="text-lg font-bold text-white">实时排名</h3>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto">
+                {rankings.map((team, index) => {
+                  const teamGradient = getTeamGradient(index);
+                  const rank = index + 1;
+                  const displayScore = animatedScores.get(team.teamId)?.displayValue || team.totalPoints;
+                  return (
+                    <div key={team.teamId} className="flex items-center gap-3 px-3 py-3 border-b border-slate-700/30">
+                      <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${teamGradient} flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>
+                        {rank}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-semibold text-sm truncate">{team.teamName}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-cyan-400 font-mono text-base font-bold">{Math.round(displayScore).toLocaleString()}</p>
+                      </div>
                     </div>
                   );
                 })}
@@ -415,7 +342,7 @@ export default function Screen() {
             </div>
           </div>
 
-          <div className="bg-slate-900/40 rounded-xl p-4 md:p-6 border border-slate-700/30">
+          <div className="mt-4 bg-slate-900/40 rounded-xl p-4 border border-slate-700/30">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-cyan-600 flex items-center justify-center">
@@ -423,11 +350,11 @@ export default function Screen() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">总积分</p>
-                  <p className="text-xl md:text-2xl font-bold text-white font-mono">{totalScore.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-white font-mono">{totalScore.toLocaleString()}</p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-4 text-xs md:text-sm text-gray-400">
+              <div className="flex items-center gap-4 text-xs text-gray-400">
                 <span>数据每8秒自动刷新</span>
                 <span>|</span>
                 <span>攻防演练系统 v2.0</span>
@@ -461,19 +388,7 @@ export default function Screen() {
         
         @keyframes bounce-slow {
           0%, 100% { transform: translateX(-50%) translateY(0); }
-          50% { transform: translateX(-50%) translateY(-8px); }
-        }
-        
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        
-        @keyframes fall {
-          0% { transform: translateY(-100px); opacity: 0; }
-          10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { transform: translateY(100vh); opacity: 0; }
+          50% { transform: translateX(-50%) translateY(-6px); }
         }
         
         @keyframes flicker {
@@ -483,7 +398,6 @@ export default function Screen() {
         
         .animate-spin-slow { animation: spin-slow 15s linear infinite; }
         .animate-bounce-slow { animation: bounce-slow 2s ease-in-out infinite; }
-        .marquee { display: flex; animation: marquee 35s linear infinite; }
         
         .grid-pattern {
           background-image: 
