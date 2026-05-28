@@ -18,12 +18,14 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const basename = path.basename(file.originalname, ext);
-    const timestamp = Date.now().toString();
-    const random = Math.random().toString(36).substring(2, 8);
-    const safeFilename = `${timestamp}_${random}${ext}`;
-    cb(null, safeFilename);
+    let filename = file.originalname;
+    if (filename !== decodeURIComponent(filename)) {
+      try {
+        filename = decodeURIComponent(filename);
+      } catch {
+      }
+    }
+    cb(null, filename);
   },
 });
 
@@ -85,19 +87,10 @@ router.post('/', upload.single('file'), (req, res) => {
   }
 
   try {
-    let originalFilename = file.originalname;
-    
-    if (originalFilename !== decodeURIComponent(originalFilename)) {
-      try {
-        originalFilename = decodeURIComponent(originalFilename);
-      } catch {
-      }
-    }
+    console.log('文件上传请求:', { userId, teamId, fileName: file.filename });
 
-    console.log('文件上传请求:', { userId, teamId, originalName: originalFilename, storedName: file.filename });
-
-    const document = documentStore.create(userId, teamId, originalFilename, file.filename);
-    uploadLogStore.create(document.id, userId, teamId, originalFilename, file.size, 'upload');
+    const document = documentStore.create(userId, teamId, file.filename, file.filename);
+    uploadLogStore.create(document.id, userId, teamId, file.filename, file.size, 'upload');
     
     console.log('文件上传成功:', document);
     res.json({ success: true, data: document });
