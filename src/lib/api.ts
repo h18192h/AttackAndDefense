@@ -33,7 +33,7 @@ export interface Document {
   userId: string;
   teamId: string;
   fileName: string;
-  content: string;
+  filePath: string;
   uploadedAt: string;
 }
 
@@ -108,6 +108,14 @@ export const userApi = {
     });
     return response.json();
   },
+  updatePassword: async (id: string, password: string): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${BASE_URL}/users/${id}/password`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    return response.json();
+  },
   delete: async (id: string): Promise<{ success: boolean; message: string }> => {
     const response = await fetch(`${BASE_URL}/users/${id}`, { method: 'DELETE' });
     return response.json();
@@ -150,12 +158,40 @@ export const documentApi = {
     const response = await fetch(`${BASE_URL}/documents/team/${teamId}`);
     return response.json();
   },
-  create: async (userId: string, teamId: string, fileName: string, content: string): Promise<{ success: boolean; data: Document }> => {
+  create: async (userId: string, teamId: string, file: File): Promise<{ success: boolean; data: Document }> => {
+    const formData = new FormData();
+    formData.append('userId', userId);
+    formData.append('teamId', teamId);
+    formData.append('file', file);
+    
     const response = await fetch(`${BASE_URL}/documents`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, teamId, fileName, content }),
+      body: formData,
     });
+    return response.json();
+  },
+  download: async (id: string): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/documents/download/${id}`);
+    const blob = await response.blob();
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let fileName = 'download';
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="(.+)"/);
+      if (match) {
+        fileName = decodeURIComponent(match[1]);
+      }
+    }
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  },
+  delete: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${BASE_URL}/documents/${id}`, { method: 'DELETE' });
     return response.json();
   },
 };

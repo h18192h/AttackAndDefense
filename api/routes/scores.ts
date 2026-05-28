@@ -1,6 +1,5 @@
 import express from 'express';
-import { scoreStore, teamStore } from '../data/store';
-import { TeamScore } from '../types';
+import { scoreStore, teamStore } from '../data/database';
 
 const router = express.Router();
 
@@ -16,24 +15,35 @@ router.get('/team/:teamId', (req, res) => {
 
 router.get('/ranking', (req, res) => {
   const teams = teamStore.getAll();
-  const rankings: TeamScore[] = teams.map(team => ({
-    teamId: team.id,
-    teamName: team.name,
-    totalPoints: scoreStore.getTeamTotalScore(team.id),
-  })).sort((a, b) => b.totalPoints - a.totalPoints);
+  const rankings = teams.map(team => {
+    const totalPoints = scoreStore.getTeamTotalScore(team.id);
+    return {
+      teamId: team.id,
+      teamName: team.name,
+      totalPoints,
+    };
+  }).sort((a, b) => b.totalPoints - a.totalPoints);
   
   res.json({ success: true, data: rankings });
 });
 
 router.post('/', (req, res) => {
   const { teamId, points, description } = req.body;
-  if (!teamId || points === undefined || !description) {
-    return res.status(400).json({ success: false, message: '队伍ID、分数和描述不能为空' });
+  
+  if (!teamId || points === undefined || points === null) {
+    return res.status(400).json({ success: false, message: '队伍和分数不能为空' });
   }
-  if (!teamStore.getById(teamId)) {
+  
+  if (typeof points !== 'number') {
+    return res.status(400).json({ success: false, message: '分数必须是数字' });
+  }
+  
+  const team = teamStore.getById(teamId);
+  if (!team) {
     return res.status(404).json({ success: false, message: '队伍不存在' });
   }
-  const score = scoreStore.create(teamId, points, description);
+  
+  const score = scoreStore.create(teamId, points, description || '');
   res.json({ success: true, data: score });
 });
 
@@ -42,7 +52,7 @@ router.delete('/:id', (req, res) => {
   if (success) {
     res.json({ success: true, message: '删除成功' });
   } else {
-    res.status(404).json({ success: false, message: '记录不存在' });
+    res.status(404).json({ success: false, message: '分数记录不存在' });
   }
 });
 

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, LogOut, Users, Trophy, Plus, Edit2, Trash2, User, Star, AlertCircle, X, Check } from 'lucide-react';
+import { Shield, LogOut, Users, Trophy, Plus, Edit2, Trash2, User, Star, AlertCircle, X, Check, FileText, Download, Key } from 'lucide-react';
 import { useAuthStore, useAppStore } from '../hooks/useStore';
-import { teamApi, userApi, scoreApi, Team, User as UserType, Score, TeamScore } from '../lib/api';
+import { teamApi, userApi, scoreApi, documentApi, Team, User as UserType, Score, TeamScore, Document } from '../lib/api';
 
-type TabType = 'teams' | 'users' | 'scores';
+type TabType = 'teams' | 'users' | 'scores' | 'documents';
 
 interface ModalState {
-  type: 'createTeam' | 'editTeam' | 'createUser' | 'editUser' | 'addScore' | null;
+  type: 'createTeam' | 'editTeam' | 'createUser' | 'editUser' | 'addScore' | 'changePassword' | null;
   data: any;
 }
 
@@ -22,11 +22,13 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<UserType[]>([]);
   const [scores, setScores] = useState<Score[]>([]);
   const [rankings, setRankings] = useState<TeamScore[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [modal, setModal] = useState<ModalState>({ type: null, data: null });
   const [formData, setFormData] = useState({
     name: '',
     username: '',
     password: '',
+    newPassword: '',
     role: 'user' as 'admin' | 'user',
     teamId: '',
     points: 0,
@@ -43,16 +45,18 @@ export default function AdminDashboard() {
   }, [user, navigate]);
 
   const loadData = async () => {
-    const [teamsRes, usersRes, scoresRes, rankingsRes] = await Promise.all([
+    const [teamsRes, usersRes, scoresRes, rankingsRes, docsRes] = await Promise.all([
       teamApi.getAll(),
       userApi.getAll(),
       scoreApi.getAll(),
       scoreApi.getRanking(),
+      documentApi.getAll(),
     ]);
     if (teamsRes.success) setTeams(teamsRes.data);
     if (usersRes.success) setUsers(usersRes.data);
     if (scoresRes.success) setScores(scoresRes.data);
     if (rankingsRes.success) setRankings(rankingsRes.data);
+    if (docsRes.success) setDocuments(docsRes.data);
   };
 
   const handleLogout = () => {
@@ -66,6 +70,7 @@ export default function AdminDashboard() {
       name: data?.name || '',
       username: data?.username || '',
       password: '',
+      newPassword: '',
       role: data?.role || 'user',
       teamId: data?.teamId || '',
       points: 0,
@@ -80,6 +85,7 @@ export default function AdminDashboard() {
       name: '',
       username: '',
       password: '',
+      newPassword: '',
       role: 'user',
       teamId: '',
       points: 0,
@@ -144,6 +150,14 @@ export default function AdminDashboard() {
             setMessage(result.message || '添加失败');
           }
           break;
+        case 'changePassword':
+          result = await userApi.updatePassword(modal.data.id, formData.newPassword);
+          if (result.success) {
+            setMessage(result.message);
+          } else {
+            setMessage(result.message || '修改失败');
+          }
+          break;
       }
     } catch (err) {
       setMessage('操作失败');
@@ -173,9 +187,20 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteDocument = async (id: string) => {
+    const result = await documentApi.delete(id);
+    if (result.success) {
+      loadData();
+    }
+  };
+
   const getTeamName = (teamId: string | null) => {
     if (!teamId) return '无队伍';
     return teams.find(t => t.id === teamId)?.name || '未知';
+  };
+
+  const getUserName = (userId: string) => {
+    return users.find(u => u.id === userId)?.username || '未知用户';
   };
 
   return (
@@ -218,7 +243,7 @@ export default function AdminDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-lg bg-blue-600/30 flex items-center justify-center">
@@ -252,6 +277,17 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-purple-600/30 flex items-center justify-center">
+                <FileText className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">文档数量</p>
+                <p className="text-3xl font-bold text-white">{documents.length}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700 overflow-hidden">
@@ -279,6 +315,14 @@ export default function AdminDashboard() {
               }`}
             >
               分数管理
+            </button>
+            <button
+              onClick={() => setActiveTab('documents')}
+              className={`flex-1 py-4 px-6 font-medium transition-colors ${
+                activeTab === 'documents' ? 'text-purple-400 border-b-2 border-purple-500 bg-purple-500/10' : 'text-gray-400 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              文档管理
             </button>
           </div>
 
@@ -344,6 +388,13 @@ export default function AdminDashboard() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => openModal('changePassword', user)}
+                          className="p-2 text-gray-400 hover:text-yellow-400 hover:bg-yellow-900/20 rounded-lg transition-colors"
+                          title="修改密码"
+                        >
+                          <Key className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => openModal('editUser', user)}
                           className="p-2 text-gray-400 hover:text-white hover:bg-slate-600 rounded-lg transition-colors"
@@ -418,6 +469,47 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+
+            {activeTab === 'documents' && (
+              <div>
+                <h2 className="text-lg font-semibold text-white mb-6">所有文档</h2>
+                {documents.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">暂无文档</p>
+                ) : (
+                  <div className="space-y-3">
+                    {documents.map(doc => (
+                      <div key={doc.id} className="flex items-center justify-between p-4 bg-slate-700/50 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-8 h-8 text-blue-400" />
+                          <div>
+                            <p className="font-medium text-white">{doc.fileName}</p>
+                            <p className="text-sm text-gray-500">
+                              上传者: {getUserName(doc.userId)} | 队伍: {getTeamName(doc.teamId)} | {new Date(doc.uploadedAt).toLocaleString('zh-CN')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => documentApi.download(doc.id)}
+                            className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-900/20 rounded-lg transition-colors"
+                            title="下载"
+                          >
+                            <Download className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDocument(doc.id)}
+                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
+                            title="删除"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -432,6 +524,7 @@ export default function AdminDashboard() {
                 {modal.type === 'createUser' && '创建用户'}
                 {modal.type === 'editUser' && '编辑用户'}
                 {modal.type === 'addScore' && '添加分数'}
+                {modal.type === 'changePassword' && '修改密码'}
               </h3>
               <button onClick={closeModal} className="text-gray-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -548,6 +641,20 @@ export default function AdminDashboard() {
                     />
                   </div>
                 </>
+              )}
+
+              {modal.type === 'changePassword' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">新密码</label>
+                  <input
+                    type="password"
+                    value={formData.newPassword}
+                    onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="请输入新密码"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">修改用户: {modal.data?.username}</p>
+                </div>
               )}
             </div>
 

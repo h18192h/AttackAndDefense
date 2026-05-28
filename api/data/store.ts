@@ -9,10 +9,10 @@ let teams: Team[] = [
 ];
 
 let users: User[] = [
-  { id: 'admin', username: 'admin', password: 'admin123', role: 'admin', teamId: null, createdAt: new Date('2024-01-01') },
-  { id: 'user1', username: 'reduser', password: 'user123', role: 'user', teamId: '1', createdAt: new Date('2024-01-01') },
-  { id: 'user2', username: 'blueuser', password: 'user123', role: 'user', teamId: '2', createdAt: new Date('2024-01-01') },
-  { id: 'user3', username: 'greenuser', password: 'user123', role: 'user', teamId: '3', createdAt: new Date('2024-01-01') },
+  { id: 'admin', username: 'admin', password: 'tx@2024!', role: 'admin', teamId: null, createdAt: new Date('2024-01-01') },
+  { id: 'user1', username: 'reduser', password: 'Red@2024!', role: 'user', teamId: '1', createdAt: new Date('2024-01-01') },
+  { id: 'user2', username: 'blueuser', password: 'Blue@2024!', role: 'user', teamId: '2', createdAt: new Date('2024-01-01') },
+  { id: 'user3', username: 'greenuser', password: 'Green@2024!', role: 'user', teamId: '3', createdAt: new Date('2024-01-01') },
 ];
 
 let scores: Score[] = [
@@ -114,17 +114,23 @@ export const scoreStore = {
 export const documentStore = {
   getAll: (): Document[] => documents,
   getByTeamId: (teamId: string): Document[] => documents.filter(d => d.teamId === teamId),
-  create: (userId: string, teamId: string, fileName: string, content: string): Document => {
+  getById: (id: string): Document | undefined => documents.find(d => d.id === id),
+  create: (userId: string, teamId: string, fileName: string, filePath: string): Document => {
     const document: Document = {
       id: Date.now().toString(),
       userId,
       teamId,
       fileName,
-      content,
+      filePath,
       uploadedAt: new Date(),
     };
     documents.push(document);
     return document;
+  },
+  delete: (id: string): boolean => {
+    const initialLength = documents.length;
+    documents = documents.filter(d => d.id !== id);
+    return documents.length !== initialLength;
   },
 };
 

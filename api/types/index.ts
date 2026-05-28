@@ -67,6 +67,6 @@ export interface Document {
   userId: string;
   teamId: string;
   fileName: string;
-  content: string;
+  filePath: string;
   uploadedAt: Date;
 }

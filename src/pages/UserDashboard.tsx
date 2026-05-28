@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, LogOut, Upload, FileText, Trophy, RefreshCw, User, Award } from 'lucide-react';
+import { Shield, LogOut, Upload, FileText, Trophy, RefreshCw, User, Award, Download, Trash2 } from 'lucide-react';
 import { useAuthStore, useAppStore } from '../hooks/useStore';
 import { teamApi, scoreApi, documentApi, Team, TeamScore, Document } from '../lib/api';
 
@@ -18,6 +18,7 @@ export default function UserDashboard() {
   const [message, setMessage] = useState('');
   const [myTeamScore, setMyTeamScore] = useState<TeamScore | null>(null);
   const [myRank, setMyRank] = useState(0);
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -53,29 +54,71 @@ export default function UserDashboard() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      console.log('文件选择:', e.target.files[0].name);
       setSelectedFile(e.target.files[0]);
     }
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      console.log('文件拖拽:', e.dataTransfer.files[0].name);
+      setSelectedFile(e.dataTransfer.files[0]);
+    }
+  };
+
   const handleUpload = async () => {
-    if (!selectedFile || !user?.teamId) return;
+    console.log('开始上传，当前状态:', {
+      hasSelectedFile: !!selectedFile,
+      hasUser: !!user,
+      hasTeamId: !!user?.teamId,
+      userId: user?.id,
+      teamId: user?.teamId,
+      fileName: selectedFile?.name,
+    });
+
+    if (!selectedFile) {
+      setMessage('请先选择文件');
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+
+    if (!user?.teamId) {
+      setMessage('用户没有分配队伍');
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+
     setUploading(true);
+    console.log('准备上传文件:', selectedFile.name);
 
     try {
-      const content = await selectedFile.text();
-      const result = await documentApi.create(user.id, user.teamId, selectedFile.name, content);
+      const result = await documentApi.create(user.id, user.teamId, selectedFile);
+      console.log('上传结果:', result);
       if (result.success) {
         setMessage('文件上传成功');
         setSelectedFile(null);
         loadData();
       } else {
-        setMessage('上传失败');
+        setMessage(result.message || '上传失败');
       }
     } catch (err) {
-      setMessage('上传失败');
+      console.error('上传出错:', err);
+      setMessage('上传失败: ' + (err instanceof Error ? err.message : '未知错误'));
     } finally {
       setUploading(false);
-      setTimeout(() => setMessage(''), 3000);
+      setTimeout(() => setMessage(''), 5000);
     }
   };
 
@@ -186,6 +229,27 @@ export default function UserDashboard() {
                           </p>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => documentApi.download(doc.id)}
+                          className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-900/20 rounded-lg transition-colors"
+                          title="下载"
+                        >
+                          <Download className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const result = await documentApi.delete(doc.id);
+                            if (result.success) {
+                              loadData();
+                            }
+                          }}
+                          className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
+                          title="删除"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -223,7 +287,14 @@ export default function UserDashboard() {
                 </div>
               )}
 
-              <div className="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center hover:border-purple-500 transition-colors">
+              <div 
+                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+                  dragOver ? 'border-purple-500 bg-purple-900/20' : 'border-slate-600 hover:border-purple-500'
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
                 <input
                   type="file"
                   onChange={handleFileChange}

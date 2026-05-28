@@ -1,5 +1,5 @@
 import express from 'express';
-import { teamStore } from '../data/store';
+import { teamStore } from '../data/database';
 
 const router = express.Router();
 
@@ -28,6 +28,9 @@ router.post('/', (req, res) => {
 
 router.put('/:id', (req, res) => {
   const { name } = req.body;
+  if (!name) {
+    return res.status(400).json({ success: false, message: '队伍名称不能为空' });
+  }
   const team = teamStore.update(req.params.id, name);
   if (team) {
     res.json({ success: true, data: team });
