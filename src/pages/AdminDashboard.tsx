@@ -420,10 +420,10 @@ export default function AdminDashboard() {
                   <h2 className="text-lg font-semibold text-white">分数记录</h2>
                   <button
                     onClick={() => openModal('addScore')}
-                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg hover:from-amber-700 hover:to-orange-700 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
-                    添加分数
+                    添加/扣除分数
                   </button>
                 </div>
                 <div className="space-y-3">
@@ -434,7 +434,9 @@ export default function AdminDashboard() {
                         <p className="text-sm text-gray-400">{score.description}</p>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="text-xl font-bold text-green-400">+{score.points}</span>
+                        <span className={`text-xl font-bold ${score.points >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {score.points >= 0 ? '+' : ''}{score.points}
+                        </span>
                         <button
                           onClick={() => handleDeleteScore(score.id)}
                           className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
@@ -627,8 +629,45 @@ export default function AdminDashboard() {
                       value={formData.points}
                       onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) || 0 })}
                       className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="请输入分数"
+                      placeholder="请输入分数（支持负数表示扣分）"
                     />
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, points: 100, description: '成功攻击' })}
+                        className="px-3 py-1.5 bg-green-900/30 hover:bg-green-800/30 text-green-400 text-sm rounded-lg border border-green-700/50 transition-colors"
+                      >
+                        +100 成功攻击
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, points: 80, description: '防守成功' })}
+                        className="px-3 py-1.5 bg-blue-900/30 hover:bg-blue-800/30 text-blue-400 text-sm rounded-lg border border-blue-700/50 transition-colors"
+                      >
+                        +80 防守成功
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, points: -50, description: '违规操作' })}
+                        className="px-3 py-1.5 bg-red-900/30 hover:bg-red-800/30 text-red-400 text-sm rounded-lg border border-red-700/50 transition-colors"
+                      >
+                        -50 违规扣分
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, points: -30, description: '未能防御' })}
+                        className="px-3 py-1.5 bg-orange-900/30 hover:bg-orange-800/30 text-orange-400 text-sm rounded-lg border border-orange-700/50 transition-colors"
+                      >
+                        -30 未能防御
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, points: 50, description: '信息收集' })}
+                        className="px-3 py-1.5 bg-purple-900/30 hover:bg-purple-800/30 text-purple-400 text-sm rounded-lg border border-purple-700/50 transition-colors"
+                      >
+                        +50 信息收集
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">描述</label>
