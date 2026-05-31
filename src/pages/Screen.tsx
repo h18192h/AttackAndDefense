@@ -65,12 +65,22 @@ export default function Screen() {
 
   const loadAnnouncements = async () => {
     try {
-      const result = await announcementApi.getRecent(15);
+      const result = await announcementApi.getPublic(15);
       if (result.success) {
         setAnnouncements(result.data);
       }
     } catch (err) {
       console.error('Failed to load announcements:', err);
+    }
+  };
+
+  const getDisplayTeamNames = (announcement: Announcement) => {
+    if (!announcement.teamNames) return null;
+    try {
+      const teamNames = JSON.parse(announcement.teamNames);
+      return teamNames.join('、');
+    } catch {
+      return announcement.teamNames;
     }
   };
 
@@ -396,6 +406,7 @@ export default function Screen() {
                   
                   const style = getTypeStyle();
                   const timestamp = new Date(announcement.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                  const displayTeamNames = getDisplayTeamNames(announcement);
                   
                   return (
                     <div
@@ -413,8 +424,13 @@ export default function Screen() {
                         <div className="flex items-center gap-2">
                           <span className={`text-xs font-semibold ${style.title}`}>{announcement.title}</span>
                           <span className="text-xs text-gray-500">{timestamp}</span>
+                          {displayTeamNames && (
+                            <span className="text-xs px-2 py-0.5 bg-slate-700 rounded-full text-gray-300">
+                              {displayTeamNames}
+                            </span>
+                          )}
                         </div>
-                        <p className="text-sm text-gray-300 truncate mt-1">{announcement.content}</p>
+                        <p className="text-sm text-gray-300 mt-1">{announcement.content}</p>
                       </div>
                       {announcement.points !== undefined && (
                         <span className={`text-lg font-bold ${announcement.points >= 0 ? 'text-green-400' : 'text-red-400'}`}>

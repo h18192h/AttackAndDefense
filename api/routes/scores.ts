@@ -47,7 +47,7 @@ router.post('/', (req, res) => {
   
   const title = points >= 0 ? '加分成功' : '扣分';
   const content = `${team.name}${points >= 0 ? '获得' : '扣除'}${Math.abs(points)}分${description ? ` - ${description}` : ''}`;
-  announcementStore.create(title, content, 'score', teamId, team.name, points);
+  announcementStore.create(title, content, 'score', [teamId], [team.name], points);
   
   res.json({ success: true, data: score });
 });

@@ -42,8 +42,8 @@ export interface Announcement {
   title: string;
   content: string;
   type: 'system' | 'score' | 'warning';
-  teamId?: string;
-  teamName?: string;
+  teamIds?: string | null;
+  teamNames?: string | null;
   points?: number;
   timestamp: string;
 }
@@ -212,15 +212,22 @@ export const announcementApi = {
     const response = await fetch(`${BASE_URL}/announcements/all`);
     return response.json();
   },
-  getRecent: async (limit: number = 10): Promise<{ success: boolean; data: Announcement[] }> => {
-    const response = await fetch(`${BASE_URL}/announcements?limit=${limit}`);
+  getPublic: async (limit: number = 15): Promise<{ success: boolean; data: Announcement[] }> => {
+    const response = await fetch(`${BASE_URL}/announcements/public?limit=${limit}`);
     return response.json();
   },
-  create: async (title: string, content: string, type: 'system' | 'score' | 'warning', teamId?: string): Promise<{ success: boolean; data: Announcement }> => {
+  getRecent: async (limit: number = 10, teamId?: string): Promise<{ success: boolean; data: Announcement[] }> => {
+    const url = teamId 
+      ? `${BASE_URL}/announcements?limit=${limit}&teamId=${teamId}`
+      : `${BASE_URL}/announcements?limit=${limit}`;
+    const response = await fetch(url);
+    return response.json();
+  },
+  create: async (title: string, content: string, type: 'system' | 'score' | 'warning', teamIds?: string[]): Promise<{ success: boolean; data: Announcement }> => {
     const response = await fetch(`${BASE_URL}/announcements`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, content, type, teamId }),
+      body: JSON.stringify({ title, content, type, teamIds }),
     });
     return response.json();
   },

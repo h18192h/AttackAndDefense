@@ -65,11 +65,10 @@ db.exec(`
     title TEXT NOT NULL,
     content TEXT NOT NULL,
     type TEXT NOT NULL,
-    team_id TEXT,
-    team_name TEXT,
+    team_ids TEXT,
+    team_names TEXT,
     points INTEGER,
-    timestamp TEXT NOT NULL,
-    FOREIGN KEY (team_id) REFERENCES teams(id)
+    timestamp TEXT NOT NULL
   );
 `);
 
@@ -219,18 +218,91 @@ export const uploadLogStore = {
   },
 };
 
+// 检查并迁移数据库表结构
+function migrateAnnouncementsTable() {
+  try {
+    // 先检查当前表结构
+    const columns = db.prepare("PRAGMA table_info(announcements)").all() as any[];
+    const hasTeamIds = columns.some((c: any) => c.name === 'team_ids');
+    const hasTeamId = columns.some((c: any) => c.name === 'team_id');
+
+    if (hasTeamId && !hasTeamIds) {
+      console.log('正在迁移公告表结构...');
+      // 需要迁移
+      db.prepare('ALTER TABLE announcements RENAME TO announcements_old').run();
+      
+      // 创建新表
+      db.prepare(`
+        CREATE TABLE announcements (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          content TEXT NOT NULL,
+          type TEXT NOT NULL,
+          team_ids TEXT,
+          team_names TEXT,
+          points INTEGER,
+          timestamp TEXT NOT NULL
+        )
+      `).run();
+      
+      // 复制数据并转换
+      const oldData = db.prepare('SELECT * FROM announcements_old').all() as any[];
+      const insertStmt = db.prepare('INSERT INTO announcements (id, title, content, type, team_ids, team_names, points, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+      
+      for (const row of oldData) {
+        let teamIds = null;
+        let teamNames = null;
+        
+        if (row.team_id) {
+          teamIds = JSON.stringify([row.team_id]);
+          if (row.team_name) {
+            teamNames = JSON.stringify([row.team_name]);
+          }
+        }
+        
+        insertStmt.run(row.id, row.title, row.content, row.type, teamIds, teamNames, row.points, row.timestamp);
+      }
+      
+      db.prepare('DROP TABLE announcements_old').run();
+      console.log('公告表结构迁移完成');
+    }
+  } catch (err) {
+    console.error('迁移公告表失败:', err);
+  }
+}
+
+// 执行迁移
+migrateAnnouncementsTable();
+
 export const announcementStore = {
   getAll: () => {
-    return db.prepare('SELECT id, title, content, type, team_id as teamId, team_name as teamName, points, timestamp FROM announcements ORDER BY timestamp DESC').all();
+    return db.prepare('SELECT id, title, content, type, team_ids as teamIds, team_names as teamNames, points, timestamp FROM announcements ORDER BY timestamp DESC').all();
   },
-  getRecent: (limit: number = 10) => {
-    return db.prepare('SELECT id, title, content, type, team_id as teamId, team_name as teamName, points, timestamp FROM announcements ORDER BY timestamp DESC LIMIT ?').all(limit);
+  getRecent: (limit: number = 10, teamId?: string) => {
+    if (teamId) {
+      const allAnnouncements = db.prepare('SELECT id, title, content, type, team_ids as teamIds, team_names as teamNames, points, timestamp FROM announcements ORDER BY timestamp DESC').all() as any[];
+      return allAnnouncements.filter(a => {
+        if (!a.teamIds) return true;
+        try {
+          const teamIds = JSON.parse(a.teamIds);
+          return teamIds.includes(teamId);
+        } catch {
+          return false;
+        }
+      }).slice(0, limit);
+    }
+    return db.prepare('SELECT id, title, content, type, team_ids as teamIds, team_names as teamNames, points, timestamp FROM announcements ORDER BY timestamp DESC LIMIT ?').all(limit);
   },
-  create: (title: string, content: string, type: string, teamId?: string, teamName?: string, points?: number) => {
+  getAllTeams: (limit: number = 10) => {
+    return db.prepare('SELECT id, title, content, type, team_ids as teamIds, team_names as teamNames, points, timestamp FROM announcements WHERE team_ids IS NULL ORDER BY timestamp DESC LIMIT ?').all(limit);
+  },
+  create: (title: string, content: string, type: string, teamIds?: string[], teamNames?: string[], points?: number) => {
     const id = Date.now().toString();
     const timestamp = new Date().toISOString();
-    db.prepare('INSERT INTO announcements (id, title, content, type, team_id, team_name, points, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(id, title, content, type, teamId || null, teamName || null, points || null, timestamp);
-    return { id, title, content, type, teamId, teamName, points, timestamp };
+    const teamIdsJson = teamIds && teamIds.length > 0 ? JSON.stringify(teamIds) : null;
+    const teamNamesJson = teamNames && teamNames.length > 0 ? JSON.stringify(teamNames) : null;
+    db.prepare('INSERT INTO announcements (id, title, content, type, team_ids, team_names, points, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(id, title, content, type, teamIdsJson, teamNamesJson, points || null, timestamp);
+    return { id, title, content, type, teamIds: teamIdsJson, teamNames: teamNamesJson, points, timestamp };
   },
   delete: (id: string) => {
     const result = db.prepare('DELETE FROM announcements WHERE id = ?').run(id);

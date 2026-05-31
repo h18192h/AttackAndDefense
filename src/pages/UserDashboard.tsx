@@ -37,12 +37,22 @@ export default function UserDashboard() {
 
   const loadAnnouncements = async () => {
     try {
-      const result = await announcementApi.getRecent(10);
+      const result = await announcementApi.getRecent(10, user?.teamId);
       if (result.success) {
         setAnnouncements(result.data);
       }
     } catch (err) {
       console.error('Failed to load announcements:', err);
+    }
+  };
+
+  const getDisplayTeamNames = (announcement: Announcement) => {
+    if (!announcement.teamNames) return null;
+    try {
+      const teamNames = JSON.parse(announcement.teamNames);
+      return teamNames.join('、');
+    } catch {
+      return announcement.teamNames;
     }
   };
 
@@ -211,6 +221,7 @@ export default function UserDashboard() {
                   
                   const style = getTypeStyle();
                   const timestamp = new Date(announcement.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                  const displayTeamNames = getDisplayTeamNames(announcement);
                   
                   return (
                     <div key={announcement.id} className={`flex items-start gap-3 p-3 rounded-lg ${style.bg}`}>
@@ -221,6 +232,11 @@ export default function UserDashboard() {
                         <div className="flex items-center gap-2">
                           <span className={`text-xs font-semibold ${style.title}`}>{announcement.title}</span>
                           <span className="text-xs text-gray-500">{timestamp}</span>
+                          {displayTeamNames && (
+                            <span className="text-xs px-2 py-0.5 bg-slate-700 rounded-full text-gray-300">
+                              {displayTeamNames}
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm text-gray-300 mt-1">{announcement.content}</p>
                       </div>

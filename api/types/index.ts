@@ -76,8 +76,8 @@ export interface Announcement {
   title: string;
   content: string;
   type: 'system' | 'score' | 'warning';
-  teamId?: string;
-  teamName?: string;
+  teamIds?: string | null;
+  teamNames?: string | null;
   points?: number;
   timestamp: Date;
 }

@@ -37,6 +37,7 @@ export default function AdminDashboard() {
     title: '',
     content: '',
     announcementType: 'system' as 'system' | 'score' | 'warning',
+    announcementTeamIds: [] as string[],
   });
   const [message, setMessage] = useState('');
 
@@ -84,6 +85,7 @@ export default function AdminDashboard() {
       title: '',
       content: '',
       announcementType: 'system',
+      announcementTeamIds: [],
     });
     setMessage('');
   };
@@ -102,6 +104,7 @@ export default function AdminDashboard() {
       title: '',
       content: '',
       announcementType: 'system',
+      announcementTeamIds: [],
     });
     setMessage('');
   };
@@ -171,7 +174,8 @@ export default function AdminDashboard() {
           }
           break;
         case 'createAnnouncement':
-          result = await announcementApi.create(formData.title, formData.content, formData.announcementType, formData.teamId || undefined);
+          const teamIds = formData.announcementTeamIds.length > 0 ? formData.announcementTeamIds : undefined;
+          result = await announcementApi.create(formData.title, formData.content, formData.announcementType, teamIds);
           if (result.success) {
             setMessage('公告发布成功');
             loadData();
@@ -189,6 +193,16 @@ export default function AdminDashboard() {
     const result = await announcementApi.delete(id);
     if (result.success) {
       loadData();
+    }
+  };
+
+  const getDisplayTeamNames = (announcement: Announcement) => {
+    if (!announcement.teamNames) return null;
+    try {
+      const teamNames = JSON.parse(announcement.teamNames);
+      return teamNames.join('、');
+    } catch {
+      return announcement.teamNames;
     }
   };
 
@@ -587,6 +601,7 @@ export default function AdminDashboard() {
                     };
                     
                     const style = getTypeStyle();
+                    const displayTeamNames = getDisplayTeamNames(announcement);
                     return (
                       <div key={announcement.id} className={`flex items-start justify-between p-4 rounded-xl border ${style.bg}`}>
                         <div className="flex items-start gap-3">
@@ -596,9 +611,9 @@ export default function AdminDashboard() {
                           <div>
                             <div className="flex items-center gap-2">
                               <span className={`font-semibold ${style.title}`}>{announcement.title}</span>
-                              {announcement.teamName && (
+                              {displayTeamNames && (
                                 <span className="text-xs px-2 py-0.5 bg-slate-700 rounded-full text-gray-300">
-                                  {announcement.teamName}
+                                  {displayTeamNames}
                                 </span>
                               )}
                             </div>
@@ -838,17 +853,29 @@ export default function AdminDashboard() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">关联队伍（可选）</label>
-                    <select
-                      value={formData.teamId}
-                      onChange={(e) => setFormData({ ...formData, teamId: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    >
-                      <option value="">不关联队伍</option>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      选择接收公告的队伍
+                      <span className="text-gray-500 font-normal ml-1">（不选则发送给所有队伍）</span>
+                    </label>
+                    <div className="max-h-32 overflow-y-auto bg-slate-700/50 border border-slate-600 rounded-lg p-2 space-y-1">
                       {teams.map(team => (
-                        <option key={team.id} value={team.id}>{team.name}</option>
+                        <label key={team.id} className="flex items-center gap-2 p-2 hover:bg-slate-600/30 rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.announcementTeamIds.includes(team.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData({ ...formData, announcementTeamIds: [...formData.announcementTeamIds, team.id] });
+                              } else {
+                                setFormData({ ...formData, announcementTeamIds: formData.announcementTeamIds.filter(id => id !== team.id) });
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-purple-500 focus:ring-purple-500"
+                          />
+                          <span className="text-gray-300">{team.name}</span>
+                        </label>
                       ))}
-                    </select>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">公告内容</label>
